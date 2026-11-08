@@ -11,7 +11,13 @@ const credsSchema = z.object({
   password: z.string().min(1).max(100),
 });
 
+const nextAuthSecret = process.env.NEXTAUTH_SECRET?.trim();
+if (!nextAuthSecret) {
+  throw new Error("NEXTAUTH_SECRET must be configured for NextAuth.");
+}
+
 export const authOptions: NextAuthOptions = {
+  secret: nextAuthSecret,
   session: { strategy: "jwt", maxAge: 60 * 60 * 12 },
   pages: { signIn: "/login" },
   providers: [
