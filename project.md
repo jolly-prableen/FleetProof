@@ -4,10 +4,10 @@ Proof-of-delivery capture, AI check and billing for a full-truckload transporter
 
 - **Task:** Isocode take-home, Software Engineering Intern
 - **Problem statement chosen:** Road transport fleet's proof-of-delivery capture and billing app
-- **GitHub:** _add URL here_
-- **Live app:** _add URL here_
+GitHub: https://github.com/jolly-prableen/FleetProof
+- **Live app:** Not deployed or verified.
 
-How to read this file: every requirement in the client's brief is listed here, whether or not it is built yet. The **Status** column is honest: **Done** means it works in the repository, **Planned** means it is specified here and not built yet.
+How to read this file: every requirement in the client's brief is listed here. **Implemented** means the feature is present in the repository; it does not imply a live deployment or end-to-end production verification. **Partially verified** means important implementation or tests exist, but the complete external or operational behavior has not been verified.
 
 ---
 
@@ -68,13 +68,13 @@ Budget and time in the brief: ₹7.5 lakh, 6 weeks.
 
 | # | Requirement from the brief | Status |
 |---|---|---|
-| 1 | Driver app with one big button to photograph the POD, stamped with GPS and time | **Done** |
-| 2 | SMS upload link for hired drivers who will not install an app | **Done** |
-| 3 | AI POD check of LR number, consignee stamp, quantity, shortage or damage remarks, date and signature, asking for a retake if needed | **Done** |
-| 4 | Billing queue of verified trips by client and cycle, with Tally export and POD images attached to invoices | **Done** |
-| 5 | Dashboard of trips without POD and POD-to-invoice days by branch | **Done** |
-| 5b | Client link to view PODs | **Done** |
-| 6 | Daily trip import with LR and e-way bill numbers | **Done** |
+| 1 | Driver app with one big button to photograph the POD, stamped with GPS and time | **Implemented** |
+| 2 | Hired-driver upload link; SMS delivery is mocked and the link is displayed | **Implemented** |
+| 3 | AI POD check of LR number, consignee stamp, quantity, shortage or damage remarks, date and signature, asking for a retake if needed | **Implemented; partially verified with real providers** |
+| 4 | Billing queue of verified trips by client and cycle, with Tally export and POD images attached to invoices | **Implemented; Tally not tested with a real installation** |
+| 5 | Dashboard of trips without POD and POD-to-invoice days by branch | **Implemented** |
+| 5b | Client link to view PODs | **Implemented** |
+| 6 | Daily trip import with LR and e-way bill numbers | **Implemented** |
 
 ### The core build (what the brief says must work end to end)
 
@@ -82,13 +82,13 @@ About 6 to 8 screens: driver POD capture, AI check with retake prompt, review qu
 
 | Core build item | Status |
 |---|---|
-| Driver POD capture | **Done** |
-| AI check with retake prompt | **Done** |
-| Review queue | **Done** |
-| Billing queue with export | **Done** |
-| Missing-POD dashboard | **Done** |
-| Offline capture with compressed upload (under 300 KB) | **Done**. The service worker caches the app shell; a capture page still needs to have been visited before it can be reopened offline. |
-| Seed from the sample data | **Done** |
+| Driver POD capture | **Implemented** |
+| AI check with retake prompt | **Implemented; real operational AI not verified** |
+| Review queue | **Implemented** |
+| Billing queue with export | **Implemented; Tally not tested with a real installation** |
+| Missing-POD dashboard | **Implemented** |
+| Offline capture with compressed upload (under 300 KB) | **Implemented**. IndexedDB queues failed uploads, retries on reconnection, and the service worker caches the app shell. A capture page still needs to have been visited before it can be reopened offline; API operations require connectivity. |
+| Seed from the sample data | **Implemented** |
 
 ### Out of scope (from the brief)
 
@@ -100,18 +100,18 @@ Live GPS tracking. Trip planning. Fuel and driver expense accounting. None of th
 
 | # | Screen | Route | Role | Status |
 |---|---|---|---|---|
-| 1 | Sign in | `/login` | Everyone | Done |
-| 2 | Driver home: PODs to photograph | `/driver` | Driver | Done |
-| 3 | Capture and result (green tick, red retake, amber review) | `/driver/capture/[tripId]` | Driver | Done |
-| 4 | Hired-driver upload page, no login | `/u/[token]` | Hired driver | Done |
-| 5 | Billing overview | `/billing` | Billing | Done |
-| 6 | Review queue | `/billing/review` | Billing | Done |
-| 7 | Review detail: photo beside editable fields | `/billing/review/[tripId]` | Billing | Done |
-| 8 | Billing queue by client and cycle | `/billing/queue` | Billing | Done |
-| 9 | Invoice: Tally and CSV downloads, POD images | `/billing/invoices/[id]` | Billing | Done |
-| 10 | Missing-POD dashboard | `/billing/dashboard` | Billing | Done |
-| 11 | Trip import | `/billing/import` | Billing | Done |
-| 12 | Client POD view, no login | `/c/[token]` | Client | Done |
+| 1 | Sign in | `/login` | Everyone | Implemented |
+| 2 | Driver home: PODs to photograph | `/driver` | Driver | Implemented |
+| 3 | Capture and result (green tick, red retake, amber review) | `/driver/capture/[tripId]` | Driver | Implemented |
+| 4 | Hired-driver upload page, no login | `/u/[token]` | Hired driver | Implemented; SMS delivery mocked |
+| 5 | Billing overview | `/billing` | Billing | Implemented |
+| 6 | Review queue | `/billing/review` | Billing | Implemented |
+| 7 | Review detail: photo beside editable fields | `/billing/review/[tripId]` | Billing | Implemented |
+| 8 | Billing queue by client and cycle | `/billing/queue` | Billing | Implemented |
+| 9 | Invoice: Tally and CSV downloads, POD images | `/billing/invoices/[id]` | Billing | Implemented; Tally not tested with a real installation |
+| 10 | Missing-POD dashboard | `/billing/dashboard` | Billing | Implemented |
+| 11 | Trip import | `/billing/import` | Billing | Implemented |
+| 12 | Client POD view, no login | `/c/[token]` | Client | Implemented |
 
 ---
 
@@ -148,7 +148,7 @@ Invoices are **never sent automatically**. A billing executive creates each invo
 
 ## 9. Feature details
 
-### 9.1 Driver app and offline capture (Done)
+### 9.1 Driver app and offline capture (Implemented)
 
 - One big camera button per trip. The phone's camera opens directly.
 - The photo is stamped with the **time** on the phone at capture, and the **GPS** position when the phone allows it. A missing GPS fix never blocks the upload.
@@ -159,7 +159,7 @@ Invoices are **never sent automatically**. A billing executive creates each invo
 - **Offline:** if the upload fails for network reasons, the photo is saved on the phone and sent when the signal returns. Every upload carries a unique ID, so a retry never creates a duplicate.
 - The service worker caches the driver shell, manifest and icon so the app can reopen inside a dead zone. The manifest and icon support Add to Home Screen.
 
-### 9.2 SMS upload link for hired drivers (Done)
+### 9.2 SMS upload link for hired drivers (Implemented; SMS mocked)
 
 Hired drivers will not install an app or remember a password.
 
@@ -168,7 +168,7 @@ Hired drivers will not install an app or remember a password.
 - The token is tied to **one trip**, expires after a set time, and can only upload for that trip. It cannot read anything.
 - The upload endpoint for tokens applies the same checks and the same AI rules as the signed-in one.
 
-### 9.3 Daily trip import (Done)
+### 9.3 Daily trip import (Implemented)
 
 - Billing executive uploads a CSV at `/billing/import`.
 - Columns: Trip ID, Client, Vehicle, Hired (yes or no), Branch, To, Freight, LR number, E-way bill number, Consignee name, Consignee phone.
@@ -176,14 +176,14 @@ Hired drivers will not install an app or remember a password.
 - A Trip ID that already exists is skipped, so importing the same file twice is safe.
 - Each trip keeps its **LR number and e-way bill**, as the brief requires.
 
-### 9.4 Client link to view PODs (Done)
+### 9.4 Client link to view PODs (Implemented)
 
 - A billing executive creates a read-only link for one invoice.
 - The client opens `/c/[token]` with no sign-in and sees only that invoice's trips and POD images.
 - The link expires and can be switched off.
 - Consignee phone numbers are never shown on it.
 
-### 9.5 Review queue (Done)
+### 9.5 Review queue (Implemented)
 
 - Lists PODs the AI could not clear, **oldest first**, with the reason as a chip.
 - The detail screen shows the photo next to the fields the AI read: LR number, quantity, date, remarks, stamp present, signature present.
@@ -192,7 +192,7 @@ Hired drivers will not install an app or remember a password.
 - Every correction is saved with the AI's original value next to it, as an audit trail, and with who made it.
 - Only an open review can be decided, so two executives cannot overwrite each other.
 
-### 9.6 Billing queue and export (Done)
+### 9.6 Billing queue and export (Implemented; Tally not tested with a real installation)
 
 - Verified trips that are not yet invoiced, grouped by **client and cycle**. A cycle is an ISO week such as `2026-W45` (assumption A6).
 - **Create invoice** groups one client's trips for one cycle. Two people clicking at once cannot invoice the same trip twice.
@@ -201,7 +201,7 @@ Hired drivers will not install an app or remember a password.
 - **POD images on the invoice:** the invoice page shows the photo of every trip.
 - Export is refused if any trip on the invoice has no POD.
 
-### 9.7 Missing-POD dashboard (Done)
+### 9.7 Missing-POD dashboard (Implemented)
 
 - Trips without a usable POD, with the days each has been waiting. Red from 10 days, amber from 5.
 - By branch: number without POD, oldest wait, and average POD-to-invoice days against the 4-day target.
@@ -242,7 +242,7 @@ A plain function then decides what happens. It makes no network calls and is ful
 
 **Safety against hostile photos:** text inside a photo is treated as data and never as instructions. Replies are validated against a strict schema, and long text is clipped.
 
-**Providers:** `AI_PROVIDER=mock` (default, needs no key) or `AI_PROVIDER=anthropic` with `ANTHROPIC_API_KEY`. The mock decides by the photo's bytes, so the same photo always gives the same answer, and different photos exercise every path. It is a stand-in for demos and does not read the document.
+**Providers:** `AI_PROVIDER=mock` (deterministic and conservative), `AI_PROVIDER=anthropic` with `ANTHROPIC_API_KEY`, or `AI_PROVIDER=gemini` with the server-only `GEMINI_API_KEY`. Mock AI does not inspect arbitrary photographs and routes them to manual review; controlled fixtures are for tests only. Anthropic and Gemini responses are validated before decision rules run. Provider failures or unusable responses route to manual review and never silently fall back to mock. Real providers have not been validated against operational POD documents.
 
 ---
 
@@ -252,7 +252,7 @@ A plain function then decides what happens. It makes no network calls and is ful
 |---|---|
 | Each trip links to its e-way bill | `ewayBill` on every trip, shown on review and invoice screens, written into the Tally narration and CSV |
 | Drivers need icons and Hindi or Marathi voice prompts, not typing | Icons, large buttons, browser speech in `hi-IN` and `mr-IN`, no forms on driver screens |
-| Highways have dead zones, so capture works offline | IndexedDB queue and retry. Service worker planned. |
+| Highways have dead zones, so capture works offline | IndexedDB queue, retry on reconnection, image compression, and service-worker app-shell caching are implemented. A capture page must have been visited before it can be reopened offline; API operations require connectivity. |
 | Images compressed under 300 KB | Compression on the phone. The server also rejects anything larger. |
 | Consignee names and phones are personal data (DPDP Act 2023) | Phones are masked on screen. Photos are served only to authorized signed-in users or a valid invoice client link. Client links never show phones. |
 
@@ -276,7 +276,7 @@ The phone-width pass keeps tables scrollable, long links and identifiers wrapped
 Phone / laptop browser
    |  Next.js pages (React 19, Tailwind)
    v
-Next.js route handlers (API)  -->  AI provider (mock or Anthropic)
+Next.js route handlers (API)  -->  AI provider (mock, Anthropic, or Gemini)
    |
    v
 PostgreSQL via Prisma  (Neon in production)
@@ -304,16 +304,16 @@ PostgreSQL via Prisma  (Neon in production)
 
 | Endpoint | Purpose | Status |
 |---|---|---|
-| `POST /api/pods` | Driver upload: validate, AI check, rules, save | Done |
-| `GET /api/pods/[id]/image` | POD image. Billing sees all. A driver sees only their own. | Done |
-| `PATCH /api/trips/[id]/review` | Approve or reject, with field corrections | Done |
-| `POST /api/invoices` | Create an invoice from one client's cycle | Done |
-| `GET /api/invoices/[id]/export?format=tally\|csv` | Download the invoice file | Done |
-| `POST /api/pods/token` | Hired-driver upload with a token | Done |
-| `POST /api/trips/[id]/upload-token` | Billing creates a seven-day hired-driver upload link | Done |
-| `POST /api/trips/import` | CSV trip import | Done |
-| `POST /api/invoices/[id]/share` | Create the client link | Done |
-| `POST /api/invoices/[id]/share/revoke` | Revoke the client link | Done |
+| `POST /api/pods` | Driver upload: validate, AI check, rules, save | Implemented |
+| `GET /api/pods/[id]/image` | POD image. Billing sees all. A driver sees only their own. | Implemented |
+| `PATCH /api/trips/[id]/review` | Approve or reject, with field corrections | Implemented |
+| `POST /api/invoices` | Create an invoice from one client's cycle | Implemented |
+| `GET /api/invoices/[id]/export?format=tally\|csv` | Download the invoice file | Implemented; Tally not tested with a real installation |
+| `POST /api/pods/token` | Hired-driver upload with a token | Implemented |
+| `POST /api/trips/[id]/upload-token` | Billing creates a seven-day hired-driver upload link | Implemented |
+| `POST /api/trips/import` | CSV trip import | Implemented |
+| `POST /api/invoices/[id]/share` | Create the client link | Implemented |
+| `POST /api/invoices/[id]/share/revoke` | Revoke the client link | Implemented |
 
 ## 16. Security and privacy
 
@@ -388,18 +388,20 @@ npm test
 npm run dev              # http://localhost:3000
 ```
 
-Environment variable names: `DATABASE_URL`, `NEXTAUTH_URL`, `NEXTAUTH_SECRET`, `AI_PROVIDER`, `ANTHROPIC_API_KEY`, `TALLY_COMPANY`.
+Environment variable names: `DATABASE_URL`, `NEXTAUTH_URL`, `NEXTAUTH_SECRET`, `AI_PROVIDER`, `MOCK_AI_FIXTURE`, `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, `GEMINI_MODEL`, `TALLY_COMPANY`.
 
 ## 21. Tests
 
-`npm test` covers:
+`npm test` covers 67 tests across the provider, upload, rules, export, dashboard, import, sharing, rate-limit, and selected authorization/transaction test files. Coverage includes:
 
 - **Decision rules:** verified, retake, review, retake limit, Hindi remarks, low confidence.
 - **AI reply parsing:** valid, fenced, garbage, wrong type, out-of-range confidence, over-long text.
+- **Gemini provider:** structured response parsing, invalid JSON, missing fields, shortage/damage flags, API failures, and missing keys.
+- **Mock provider and upload behavior:** conservative arbitrary-photo handling, controlled fixtures, provider failure, image-preserving review outcomes, and upload-versus-verification results.
 - **Tally and CSV export:** totals, XML escaping, India-time dates, formula-injection guard.
 - **Dashboard maths:** days waiting, branch counts, averages.
 
-Planned: tests for the upload API (access, size, idempotency), the review API (double decision), and invoice creation (double click).
+Full disposable-database route runs and a live Gemini request with an operational POD remain unverified.
 
 ---
 
@@ -407,16 +409,16 @@ Planned: tests for the upload API (access, size, idempotency), the review API (d
 
 | Step | Content | Status |
 |---|---|---|
-| 1 | Scaffold, schema, seed, sign-in | Done |
-| 2 | Driver capture, compression, AI check, retake, offline queue | Done |
-| 3 | Review queue and review detail | Done |
-| 4 | Billing queue, invoices, Tally and CSV export, dashboard | Done |
-| 5 | Hired-driver SMS link page | Done |
-| 6 | Service worker, home-screen install, loading states, phone-width check | Done |
-| 7 | Trip import, client link | Done |
-| 8 | API tests, real-photo test of the AI provider | Partially done (route-level tests added; disposable-database route runs and real-photo test planned) |
-| 9 | Deploy to Vercel and Neon, public GitHub repository | Partially done (CI workflow added; hosting and public repository still planned) |
-| 10 | TDD and `deployment.md`, then submit | Partially done (`deployment.md` added; final TDD/submission packaging planned) |
+| 1 | Scaffold, schema, seed, sign-in | Implemented |
+| 2 | Driver capture, compression, AI check, retake, offline queue | Implemented |
+| 3 | Review queue and review detail | Implemented |
+| 4 | Billing queue, invoices, Tally and CSV export, dashboard | Implemented; Tally not tested with a real installation |
+| 5 | Hired-driver upload-link page | Implemented; SMS delivery mocked |
+| 6 | Service worker, home-screen install, loading states, phone-width check | Implemented; offline/API limitations remain as documented |
+| 7 | Trip import, client link | Implemented |
+| 8 | API tests, real-photo test of the AI provider | Partially verified (automated provider and selected route tests exist; live Gemini and full disposable-database runs remain unverified) |
+| 9 | Deploy to Vercel and Neon, public GitHub repository | Partially complete (repository URL documented; live deployment not completed or verified) |
+| 10 | TDD and `deployment.md`, then submit | Partially complete (`deployment.md` exists; final TDD and exact two-file ZIP remain) |
 
 ## 23. Submission checklist (from the task)
 

@@ -1,15 +1,19 @@
-# POD Desk deployment
+# FleetProof deployment
+
+Repository: <https://github.com/jolly-prableen/FleetProof>
+
+No live deployment has been completed or verified. The instructions below describe the intended local and deployment setup; they are not evidence of a production deployment.
 
 ## Requirements
 
 - Node.js 20 or newer
 - npm
 - PostgreSQL 14 or newer, or a hosted PostgreSQL database such as Neon
-- A public HTTPS URL for production
+- HTTPS for any deployed environment
 
-The application uses Next.js, Prisma, PostgreSQL, and a conservative mock AI provider by default. Gemini is available for real POD vision inspection.
+The application uses Next.js, Prisma, PostgreSQL, and role-based NextAuth credentials. It supports a conservative mock AI provider and optional Anthropic or Gemini vision providers.
 
-## Run locally
+## Local setup
 
 From the repository root:
 
@@ -20,93 +24,61 @@ docker compose up -d
 npm run db:push
 npm run db:seed
 npm test
+npx tsc --noEmit
+npm run build
 npm run dev
 ```
 
 Open `http://localhost:3000`.
 
-If Docker is not available, set `DATABASE_URL` in `.env` to an accessible PostgreSQL database and skip `docker compose up -d`.
+If Docker is unavailable, set `DATABASE_URL` to an accessible PostgreSQL database and skip `docker compose up -d`.
 
-To reset the local database and recreate the demo data:
+To recreate development data:
 
 ```powershell
 npm run db:reset
 ```
 
-`db:reset` deletes existing data in the configured database. Use it only with a development database.
+`db:reset` deletes all data in the configured database. Never run it against a shared or production database.
 
 ## Environment variables
 
-Set these variables in `.env` locally or in the hosting provider:
+Set these variable names in `.env` locally or in the hosting provider. Do not commit their values:
 
 | Variable | Purpose |
 |---|---|
 | `DATABASE_URL` | PostgreSQL connection string used by Prisma |
 | `NEXTAUTH_URL` | Canonical application URL |
-| `NEXTAUTH_SECRET` | Long random secret used to sign sessions |
+| `NEXTAUTH_SECRET` | Secret used to sign sessions |
 | `AI_PROVIDER` | `mock`, `anthropic`, or `gemini` |
-| `MOCK_AI_FIXTURE` | Optional controlled test fixture; leave empty for the safe manual-review default |
-| `ANTHROPIC_API_KEY` | Anthropic API key when `AI_PROVIDER=anthropic`; leave empty for `mock` |
-| `GEMINI_API_KEY` | Server-only Google Gemini API key when `AI_PROVIDER=gemini` |
-| `GEMINI_MODEL` | Optional Gemini model name; defaults to `gemini-2.5-flash` |
+| `MOCK_AI_FIXTURE` | Optional controlled mock fixture for tests; leave empty for the conservative default |
+| `ANTHROPIC_API_KEY` | Server-only Anthropic key when `AI_PROVIDER=anthropic` |
+| `GEMINI_API_KEY` | Server-only Google Gemini key when `AI_PROVIDER=gemini` |
+| `GEMINI_MODEL` | Optional Gemini model; the code defaults to `gemini-2.5-flash` |
 | `TALLY_COMPANY` | Company name written into Tally XML exports |
 
-Never commit `.env`, production secrets, database credentials, or API keys. The repository contains only the variable names in `.env.example`.
+The mock provider is deterministic and does not inspect arbitrary photographs. Real provider responses are validated before decision rules run. Provider failures or unusable responses route uploads to manual review and never silently fall back to mock.
 
-For a local secret, generate a random value with a password generator or:
+Real Anthropic and Gemini responses have not been validated against real operational POD documents. The mock provider is the safe no-key option for local demonstrations.
 
-```powershell
-openssl rand -base64 32
-```
+## Deployment outline
 
-## Deploy to Neon and Vercel
+The intended deployment is a Next.js host such as Vercel with PostgreSQL such as Neon:
 
-### 1. Create the production database
+1. Push the repository to the public GitHub repository above.
+2. Import the repository into the hosting provider.
+3. Configure the environment variable names listed above with deployment-specific values.
+4. Set `NEXTAUTH_URL` to the deployed HTTPS URL.
+5. Choose `AI_PROVIDER=mock` for a deterministic demonstration, or configure the selected real provider's server-only API key.
+6. Build with `npm run build`.
+7. Initialize the database with `npx prisma db push`.
+8. Seed only a dedicated demonstration database with `npm run db:seed`.
 
-1. Create a PostgreSQL project in Neon.
-2. Copy the pooled or direct connection string.
-3. Keep the connection string private.
-
-### 2. Deploy the application
-
-1. Push the repository to a GitHub repository.
-2. Import the repository into Vercel.
-3. Set the production environment variables listed above.
-4. Set `NEXTAUTH_URL` to the final HTTPS Vercel URL.
-5. Use `AI_PROVIDER=mock` for a conservative no-key demonstration, or configure the server-only `GEMINI_API_KEY` before selecting `gemini`.
-6. Deploy.
-
-The build command is:
-
-```text
-npm run build
-```
-
-The build generates the Prisma client and builds the Next.js application.
-
-Every push and pull request is also checked by `.github/workflows/ci.yml`. The CI job runs `npm ci`, `npm test`, `npx tsc --noEmit`, and `npm run build` with the mock AI provider and non-production placeholder values.
-
-### 3. Initialize the production database
-
-Run the schema command against the production `DATABASE_URL`:
-
-```powershell
-npx prisma db push
-```
-
-For a demo deployment, seed the database:
-
-```powershell
-npm run db:seed
-```
-
-Do not run `npm run db:reset` against production.
-
-For a production system with ongoing schema evolution, replace `db push` with reviewed Prisma migrations before deploying.
+This project currently uses Prisma `db push`; no reviewed Prisma migration history is included.
 
 ## Demo accounts
 
-All demo accounts use the password `demo1234`.
+All demo accounts use password `demo1234`:
 
 | Email | Role | Language |
 |---|---|---|
@@ -114,28 +86,29 @@ All demo accounts use the password `demo1234`.
 | `driver2@demo.test` | Driver | Hindi |
 | `billing@demo.test` | Billing executive | Hindi |
 
-These are demo accounts only. Change or remove them before using real operational data.
+These are demonstration accounts only.
 
-## Smoke test after deployment
+## Implemented workflow notes
 
-1. Open the production URL and sign in as the billing user.
-2. Open the billing dashboard, review queue, billing queue, and trip import page.
-3. Create an invoice from a verified trip group and download the CSV and Tally XML.
-4. Create a client link and open it in a private window.
-5. Generate a hired-driver upload link and open it in a private window.
-6. Sign in as a driver and verify that only that driver's trips are visible.
-7. Upload a small JPEG POD and confirm the AI result appears.
-8. Confirm the service worker is registered from the browser Application panel.
-9. Check that invalid, expired, or revoked public links do not display data.
+- Driver photos are compressed to under 300 KB before upload.
+- GPS is captured when the device permits it; missing GPS does not block upload.
+- Photos that fail because of network conditions are held in an IndexedDB queue and retried when connectivity returns.
+- A service worker caches the application shell, manifest, and icon. A specific capture page must have been visited before it can be reopened offline, and API operations still require connectivity.
+- Hired-driver SMS delivery is mocked: the billing user receives a displayed upload link rather than an actual SMS.
+- Tally XML follows a common import shape but has not been tested with a real Tally installation.
+- Invoices are never sent automatically. A billing user explicitly creates and downloads an invoice.
+- Live GPS tracking, trip planning, fuel accounting, and driver-expense accounting are outside the selected brief scope.
 
-## Operational notes
+## Smoke-test checklist
 
-- The mock provider is deterministic and does not read real documents.
-- The mock provider never verifies arbitrary uploaded photos. It routes them to manual review; controlled fixtures are for tests only.
-- Real Anthropic calls require `AI_PROVIDER=anthropic` and `ANTHROPIC_API_KEY`.
-- Gemini sends the uploaded JPEG to Google for vision extraction when `AI_PROVIDER=gemini`. Its structured response is validated before decision rules run. Provider errors never fall back to mock and route the upload to manual review.
-- Tally XML follows the documented common import shape but has not been tested against a real Tally installation.
-- POD images are stored in PostgreSQL as compressed image bytes.
-- Public client and hired-driver links are temporary and should be treated as sensitive.
-- Public-link throttling is in-memory per application instance. For a multi-instance production deployment, add a shared rate-limit store such as Redis or an edge-provider rate limiter.
-- Live GPS tracking, trip planning, fuel accounting, and driver-expense accounting are not part of this application.
+When a deployment is available, verify:
+
+1. Driver and billing sign-in with the demo accounts.
+2. Driver trip visibility and role restrictions.
+3. JPEG upload, image preservation, AI result, retake, and manual-review paths.
+4. Hired-driver link expiry and upload behavior.
+5. Billing review, correction, approval, and rejection.
+6. Invoice creation, CSV export, and Tally XML download.
+7. Client share-link expiry and revocation.
+8. Trip import validation and duplicate handling.
+9. Invalid or unauthorized image and token requests.
