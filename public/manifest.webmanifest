@@ -1,0 +1,18 @@
+{
+  "name": "POD Desk",
+  "short_name": "POD Desk",
+  "description": "Proof of delivery capture and billing",
+  "start_url": "/driver",
+  "display": "standalone",
+  "background_color": "#FBFAF4",
+  "theme_color": "#1F4E5F",
+  "lang": "en",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

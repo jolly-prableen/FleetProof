@@ -1,0 +1,14 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html { -webkit-tap-highlight-color: transparent; }
+  body { @apply bg-[#f3f5f4] text-ink antialiased; }
+  ::selection { @apply bg-brand text-white; }
+  :focus-visible { @apply outline outline-2 outline-offset-2 outline-brand; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}

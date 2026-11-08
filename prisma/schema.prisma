@@ -1,0 +1,96 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  DRIVER
+  BILLING
+}
+
+enum PodStatus {
+  PENDING
+  VERIFIED
+  RETAKE_REQUESTED
+  NEEDS_REVIEW
+  REJECTED
+}
+
+model User {
+  id           String @id @default(cuid())
+  name         String
+  email        String @unique
+  passwordHash String
+  role         Role
+  branch       String
+  language     String @default("hi") // hi | mr
+  trips        Trip[]
+}
+
+model Trip {
+  id             String    @id // e.g. TRP-66120
+  client         String
+  clientCycle    String // e.g. 2026-W45
+  vehicle        String
+  hired          Boolean   @default(false)
+  branch         String
+  destination    String
+  freight        Int
+  lrNumber       String    @unique
+  ewayBill       String
+  consigneeName  String // personal data (DPDP Act 2023)
+  consigneePhone String // personal data (DPDP Act 2023)
+  deliveredAt    DateTime?
+  podStatus      PodStatus @default(PENDING)
+  remarks        String?
+  retakeCount    Int       @default(0)
+  uploadToken    String?   @unique // SMS link for hired drivers
+  uploadTokenExpiresAt DateTime?
+  driverId       String?
+  driver         User?     @relation(fields: [driverId], references: [id])
+  pods           Pod[]
+  invoiceId      String?
+  invoice        Invoice?  @relation(fields: [invoiceId], references: [id])
+
+  @@index([podStatus])
+  @@index([client, clientCycle])
+}
+
+model Pod {
+  id              String    @id @default(cuid())
+  clientId        String?   @unique // idempotency key from the device, so a retried upload never double-saves
+  tripId          String
+  trip            Trip      @relation(fields: [tripId], references: [id])
+  image           Bytes // compressed JPEG, under 300 KB
+  mime            String    @default("image/jpeg")
+  sizeKb          Int
+  lat             Float?
+  lng             Float?
+  capturedAt      DateTime // device time, stamped at capture
+  uploadedAt      DateTime  @default(now())
+  extracted       Json? // { readable, lr, stamp, signature, qty, remarks, date }
+  confidence      Float?
+  reasons         String[]
+  outcome         PodStatus
+  correctedBy     String?
+  correctedFields Json?
+
+  @@index([tripId])
+}
+
+model Invoice {
+  id         String    @id @default(cuid())
+  number     Int       @unique @default(autoincrement()) // shown as INV-0001
+  client     String
+  cycle      String
+  createdAt  DateTime  @default(now())
+  exportedAt DateTime? // set when a person downloads the Tally or CSV file
+  shareToken String? @unique
+  shareTokenExpiresAt DateTime?
+  shareRevokedAt DateTime?
+  trips      Trip[]
+}

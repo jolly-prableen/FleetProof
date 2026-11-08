@@ -1,0 +1,27 @@
+node_modules
+.next
+out
+.env
+.env.local
+uploads/*
+!uploads/.gitkeep
+*.tsbuildinfo
+next-env.d.ts
+.DS_Store
+# Old project archive and nested copy
+pod-billing.zip
+pod-billing/
+
+# Local uploads
+uploads/*
+!uploads/.gitkeep
+# Old project files
+pod-billing.zip
+pod-billing/
+
+# Local tooling data
+.tsupgrader/
+
+# Local uploads
+uploads/*
+!uploads/.gitkeep
